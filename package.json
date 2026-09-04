@@ -1,0 +1,48 @@
+{
+  "name": "rollout-cli",
+  "version": "0.1.0",
+  "description": "Make a breaking change once, get pull requests open on every repo that needs it.",
+  "type": "module",
+  "bin": {
+    "rollout": "./dist/cli.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  },
+  "homepage": "https://payallenka.github.io/rollout/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/payallenka/rollout.git"
+  },
+  "bugs": {
+    "url": "https://github.com/payallenka/rollout/issues"
+  },
+  "keywords": [
+    "codemod",
+    "migration",
+    "monorepo",
+    "refactor",
+    "github",
+    "pull-request",
+    "cli",
+    "deprecation"
+  ],
+  "author": "Payal Lenka"
+}
