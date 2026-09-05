@@ -931,3 +931,178 @@ footer ul a:hover { color: var(--ink); }
 .props-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (min-width: 1240px) { .props-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .props-4 { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   Sections derived from the determinism argument
+   ============================================================ */
+
+/* ---------- triggers: why this is not a legacy problem ---------- */
+
+.triggers-block {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 26px;
+  display: grid;
+  gap: 14px;
+  box-shadow: var(--shadow-sm), var(--edge-hi);
+}
+.triggers-title { font-size: 18px; }
+.triggers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin-top: 6px; }
+.trigger { border-left: 2px solid var(--accent-wash); padding-left: 14px; }
+.trigger h4 { margin: 0 0 4px; font-size: 13.5px; font-weight: 600; font-family: "Geist", sans-serif; }
+@media (max-width: 900px) { .triggers { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .triggers { grid-template-columns: 1fr; } }
+
+/* ---------- the comparison: the page's centrepiece ---------- */
+
+.compare {
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm), var(--edge-hi);
+}
+.compare-head, .compare-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.15fr) minmax(0, 1.15fr);
+  gap: 0;
+}
+.compare-head { background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.compare-col-head {
+  padding: 13px 20px;
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-family: "Geist Mono", monospace;
+}
+.compare-col-head.is-ours { color: var(--accent-ink); }
+
+.compare-row { border-top: 1px solid var(--line); transition: background 160ms ease; }
+.compare-row:first-of-type { border-top: 0; }
+.compare-row:hover { background: var(--surface-2); }
+
+.compare-label {
+  padding: 16px 20px;
+  font-size: 13px;
+  color: var(--ink-3);
+  font-family: "Geist Mono", monospace;
+}
+.compare-cell {
+  padding: 16px 20px;
+  font-size: 14px;
+  color: var(--ink-2);
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 9px;
+  align-items: start;
+}
+/* the winning column is lit; the alternative stays deliberately quiet */
+.compare-cell.is-ours {
+  color: var(--ink);
+  background: var(--accent-wash);
+  box-shadow: inset 1px 0 0 0 color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.mark-no { color: var(--ink-3); margin-top: 4px; }
+.mark-yes { color: var(--accent-ink); margin-top: 4px; }
+
+@media (max-width: 860px) {
+  .compare-head { display: none; }
+  .compare-row { grid-template-columns: 1fr; }
+  .compare-label { padding-bottom: 0; font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .compare-cell.is-ours { box-shadow: none; border-radius: 0 0 8px 8px; }
+}
+
+/* ---------- callouts ---------- */
+
+.callout {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-wash);
+  border-radius: 0 10px 10px 0;
+  padding: 20px 24px;
+  font-size: 15px;
+  color: var(--ink-2);
+  max-width: 82ch;
+}
+.callout strong { color: var(--ink); }
+.callout code { color: var(--accent-ink); }
+.callout-warn { border-left-color: var(--warn, var(--accent)); }
+
+/* ---------- pipeline: where judgement stops and determinism starts ---------- */
+
+.pipeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  counter-reset: stage;
+}
+.pipe-stage {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 22px;
+  background: var(--surface);
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  box-shadow: var(--shadow-sm), var(--edge-hi);
+}
+/* the deterministic middle stage is the product, so it is the lit one */
+.pipe-stage[data-ai="false"]:nth-child(2) {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  background: linear-gradient(180deg, var(--accent-wash), transparent 60%), var(--surface);
+}
+.pipe-top { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
+.pipe-index { font-family: "Geist Mono", monospace; font-size: 12px; color: var(--ink-3); }
+.pipe-badge {
+  font-family: "Geist Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 100px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-3);
+}
+.pipe-badge.is-det { border-color: color-mix(in srgb, var(--accent) 40%, transparent); color: var(--accent-ink); }
+.pipe-role { font-size: 13px; color: var(--accent-ink); font-family: "Geist Mono", monospace; }
+@media (max-width: 900px) { .pipeline { grid-template-columns: 1fr; } }
+
+/* ---------- does it use AI ---------- */
+
+.ai-facts {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 24px;
+  box-shadow: var(--shadow-sm), var(--edge-hi);
+}
+.ai-title { display: flex; align-items: center; gap: 9px; font-size: 16px; margin-bottom: 14px; }
+.ai-title svg { color: var(--accent-ink); }
+.ai-facts dl { margin: 0; display: grid; gap: 15px; }
+.ai-fact dt { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+.ai-fact dd { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+
+/* ---------- fit: qualify in, or out ---------- */
+
+.fit { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.fit-col {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 22px 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm), var(--edge-hi);
+}
+.fit-head { display: flex; align-items: center; gap: 9px; font-size: 15px; }
+.fit-head.is-yes { color: var(--accent-ink); }
+.fit-head.is-no { color: var(--ink-3); }
+.fit-item h4 { margin: 0 0 3px; font-size: 14px; font-weight: 600; font-family: "Geist", sans-serif; }
+@media (max-width: 860px) { .fit { grid-template-columns: 1fr; } }

@@ -317,3 +317,105 @@ export const FAQ = [
     "The tool is MIT licensed and free, with no limits on repositories or usage. Paid tiers are for teams who want shared migration definitions, progress tracking across repositories, and support.",
   ],
 ] as const;
+
+/* ------------------------------------------------------------------ *
+ * The differentiator, stated plainly.
+ *
+ * Determinism is the product. This belongs above the fold-line of the
+ * argument, not buried in an FAQ.
+ * ------------------------------------------------------------------ */
+
+export const COMPARISON: { label: string; agent: string; rollout: string }[] = [
+  {
+    label: "What you review",
+    agent: "Sixty different diffs, one per session",
+    rollout: "One transform, then sixty identical applications of it",
+  },
+  {
+    label: "Consistency",
+    agent: "Varies by run — each session interprets the task again",
+    rollout: "Byte-identical logic in every repository",
+  },
+  {
+    label: "Blast radius",
+    agent: "Discovered repo by repo, as it goes",
+    rollout: "The entire plan as one diff, before anything is written",
+  },
+  {
+    label: "Adjacent code",
+    agent: "May reformat or improve whatever it touches",
+    rollout: "Only what the transform matches. Nothing else moves",
+  },
+  {
+    label: "Reproducibility",
+    agent: "Re-running produces a different result",
+    rollout: "Same input, same output, every time",
+  },
+  {
+    label: "Time and cost",
+    agent: "Sixty long agent runs, billed per token",
+    rollout: "Seconds. No model calls in the path at all",
+  },
+];
+
+export const TRIGGERS = [
+  ["A dependency ships a major", "Nothing to do with how old your code is."],
+  ["A CVE is disclosed", "The clock starts on Friday, for every repository at once."],
+  ["A cloud SDK version lands", "Vendors deprecate on their schedule, not yours."],
+  ["An API version expires", "External deadlines do not care who wrote the code."],
+] as const;
+
+/* ------------------------------------------------------------------ *
+ * "Does it use AI?" and "is this for me?" - the two questions a buyer
+ * asks that the page previously left unanswered.
+ * ------------------------------------------------------------------ */
+
+export const PIPELINE = [
+  {
+    stage: "You, or a coding agent",
+    role: "Authors the transform",
+    body:
+      "Writing the transform is creative, one-time work, and a good use of Claude or " +
+      "any agent. It happens once, on your machine, against one example.",
+    ai: true,
+  },
+  {
+    stage: "rollout",
+    role: "Distributes it",
+    body:
+      "Applies that exact function to every repository. No model runs here. The same " +
+      "input produces the same output on every repo and on every re-run.",
+    ai: false,
+  },
+  {
+    stage: "Your teams",
+    role: "Review and merge",
+    body:
+      "One pull request per repository, all carrying the same diff shape. CI runs. " +
+      "The owning team approves.",
+    ai: false,
+  },
+];
+
+export const AI_FACTS = [
+  ["No model in the execution path", "Rollout makes no API calls to any model provider. There is no key to configure, and no inference step between your config and your diff."],
+  ["Your code is never sent to a model", "Because nothing calls a model, nothing uploads a repository to one. This is usually the question that decides whether a security team approves a tool at all."],
+  ["Bring an agent to author the transform", "Ask Claude to write the transform function against one example, review it once, then let rollout apply it identically everywhere. The judgement happens once, not sixty times."],
+  ["Deterministic output, by construction", "A transform is a pure function over file contents. Given the same repository it produces the same diff today, in CI, and in six months."],
+] as const;
+
+export const FIT_YES = [
+  ["Ten or more repositories", "The pain starts around a dozen. Below that, your editor's find-and-replace is genuinely faster."],
+  ["Polyrepo, or several monorepos", "Rollout's unit of work is the repository. Inside a single monorepo, your existing codemod tooling already reaches everything."],
+  ["A platform, infra or DX team", "Someone who owns a library or standard that other teams consume, and who is accountable for migrations landing."],
+  ["Code hosted on GitHub", "Pull requests are opened through the GitHub CLI. GitHub.com and Enterprise Server both work."],
+  ["Any text-based language", "Transforms operate on text, so Go, Python, Ruby, Java and Terraform are all in reach. The bundled helpers are JavaScript-shaped; everything else composes replace with run and your own toolchain."],
+  ["Mechanical, uniform changes", "A rename, a version bump, a config rollout, a patched call signature - anything where the correct edit is the same in every repository."],
+] as const;
+
+export const FIT_NO = [
+  ["A single repository", "Use jscodeshift, comby, ast-grep, or your editor. Rollout would add a layer for nothing."],
+  ["Changes needing per-site judgement", "If each call site needs a different fix, a coding agent is the right tool and this is the wrong one."],
+  ["GitLab or Bitbucket", "Not supported yet. Transforms still work against local paths; only pull request creation is GitHub-only."],
+  ["Anything you cannot review", "Rollout is built for changes a human can approve as a diff. It is not an autonomous refactoring service."],
+] as const;
