@@ -167,3 +167,132 @@ export default {
     renameSymbol("getUserSync", "getUser"),
   ),
 };`;
+
+/* ------------------------------------------------------------------ *
+ * Company-site content
+ *
+ * Every claim below is true of the product as built. Nothing here
+ * asserts a customer, a headcount, or a certification we do not have.
+ * ------------------------------------------------------------------ */
+
+export const VALUE_PROPS = [
+  {
+    icon: "calendar",
+    title: "Deprecations land on the date you set",
+    body:
+      "The migration stops being fourteen teams' backlog item and becomes one pull " +
+      "request each. Deadlines hold because the work is already done when the notice " +
+      "goes out.",
+  },
+  {
+    icon: "clock",
+    title: "Weeks of mechanical work, in an afternoon",
+    body:
+      "One transform covers every call site in every repository. The engineer who owns " +
+      "the API writes it once instead of shepherding a spreadsheet of migration tickets " +
+      "across two quarters.",
+  },
+  {
+    icon: "users",
+    title: "Teams keep ownership of their code",
+    body:
+      "Rollout opens pull requests, never pushes to main. CI runs, the owning team " +
+      "reviews and merges. You removed their work without taking their control.",
+  },
+] as const;
+
+export const USE_CASES = [
+  ["API deprecation", "Retire an internal package or endpoint and migrate every caller in the same week."],
+  ["Dependency upgrades", "Move an org off a major version, including the config and lockfile changes it needs."],
+  ["Security patches", "Push the same fix into every repository carrying a vulnerable pattern."],
+  ["Config and policy", "Roll a CI workflow, license header, or lint rule out across the estate."],
+  ["Renames at scale", "Rebrand a namespace or module across hundreds of call sites without a merge-conflict week."],
+  ["Compliance sweeps", "Apply a required change everywhere and get an auditable pull request per repository."],
+] as const;
+
+export const TRUST = [
+  ["Your code never leaves your machine", "Rollout runs locally or in your CI. There is no service to send repositories to, and no account to create."],
+  ["No telemetry, ever", "Nothing is collected, phoned home, or logged externally. The tool has no network calls of its own beyond git and the GitHub API."],
+  ["Zero runtime dependencies", "Rollout runs inside your CI; every dependency it carried would be one you inherited. It ships with none."],
+  ["Nothing lands without review", "The unit of output is a pull request. CI runs and a human approves before a single line reaches a default branch."],
+  ["Least privilege by default", "plan needs only read access to clone. Write credentials are required for apply, and nothing else."],
+  ["Auditable by construction", "Every change arrives as a reviewable diff with a consistent title and body, so the migration has a paper trail per repository."],
+] as const;
+
+export const PLANS = [
+  {
+    name: "Open source",
+    price: "Free",
+    note: "MIT licensed, forever",
+    cta: "Get started",
+    href: "#install",
+    featured: false,
+    includes: [
+      "Unlimited repositories",
+      "Every transform helper",
+      "plan and apply",
+      "GitHub pull requests",
+      "Runs locally and in CI",
+      "Community support",
+    ],
+  },
+  {
+    name: "Team",
+    price: "In development",
+    note: "Tell us what you need",
+    cta: "Register interest",
+    href: "#contact",
+    featured: true,
+    includes: [
+      "Everything in Open source",
+      "Shared migration definitions",
+      "Cross-repository progress tracking",
+      "Scheduled and recurring rollouts",
+      "GitHub Enterprise Server",
+      "Priority support",
+    ],
+  },
+  {
+    name: "Enterprise",
+    price: "Talk to us",
+    note: "Self-hosted, on your terms",
+    cta: "Start a conversation",
+    href: "#contact",
+    featured: false,
+    includes: [
+      "Everything in Team",
+      "SSO and audit logging",
+      "Custom transform development",
+      "Migration design support",
+      "SLA-backed response times",
+      "Deployment review",
+    ],
+  },
+] as const;
+
+export const FAQ = [
+  [
+    "Does my source code get uploaded anywhere?",
+    "No. Rollout is a command-line tool that runs on your machine or in your CI. Repositories are cloned locally, the transform runs in memory, and the only outbound calls are the git and GitHub operations you would make by hand.",
+  ],
+  [
+    "What happens if a transform is wrong?",
+    "You see it before anything is written. plan is the default and produces a full diff for every repository without touching them. apply re-runs that same plan and asks for confirmation. And because the output is a pull request, a wrong transform is caught in review rather than landing on sixty default branches.",
+  ],
+  [
+    "Can it handle changes a regex cannot?",
+    "Yes. A transform is a plain function from file contents to file contents, so you can run any parser or AST tool you like inside it. The bundled helpers cover the common renames; anything structural is a function you write.",
+  ],
+  [
+    "Does it work with GitHub Enterprise or GitLab?",
+    "Pull requests are opened through the GitHub CLI, so GitHub.com and GitHub Enterprise Server both work wherever gh is authenticated. GitLab and Bitbucket are not supported yet.",
+  ],
+  [
+    "How is this different from Nx, Turborepo, or a codemod library?",
+    "Those operate inside one repository. Rollout's unit of work is the organisation: many repositories, one change, one pull request each, with the review and approval flow that implies. It composes with codemod libraries rather than replacing them.",
+  ],
+  [
+    "What does it cost?",
+    "The tool is MIT licensed and free, with no limits on repositories or usage. Paid tiers are for teams who want shared migration definitions, progress tracking across repositories, and support.",
+  ],
+] as const;

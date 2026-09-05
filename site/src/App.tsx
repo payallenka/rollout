@@ -1,16 +1,31 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import {
+  ArrowRight, CalendarCheck, Check, Clock, GitPullRequest,
+  Lock, Users, type LucideIcon,
+} from "lucide-react";
 import { Terminal, ConfigBlock } from "./components/Terminal";
-import { CopyCommand, Glyph, Reveal, ScrollProgress, useStuck } from "./components/ui";
-import { ANSWERS, CONFIG_SNIPPET, GUARDS, HELPERS, SCOPE, STEPS } from "./data";
+import {
+  CopyCommand, CountUp, Glyph, Reveal, ScrollProgress, Stagger,
+  staggerItem, useActiveSection, useHeroParallax, useStuck,
+} from "./components/ui";
+import {
+  CONFIG_SNIPPET, FAQ, GUARDS, HELPERS, PLANS, STEPS, TRUST,
+  USE_CASES, VALUE_PROPS,
+} from "./data";
 
 const NAV = [
-  ["Problem", "#problem"],
-  ["How it works", "#how"],
-  ["Safety", "#safety"],
-  ["Transforms", "#helpers"],
-  ["Install", "#install"],
+  ["Why rollout", "#why"],
+  ["Product", "#product"],
+  ["Security", "#security"],
+  ["Pricing", "#pricing"],
+  ["FAQ", "#faq"],
 ] as const;
+
+const ICONS: Record<string, LucideIcon> = {
+  calendar: CalendarCheck,
+  clock: Clock,
+  users: Users,
+};
 
 export default function App() {
   return (
@@ -20,21 +35,26 @@ export default function App() {
       <TopBar />
       <main id="main">
         <Hero />
-        <Answers />
-        <Problem />
-        <How />
-        <Safety />
-        <Helpers />
-        <Scope />
-        <Install />
+        <Credibility />
+        <Why />
+        <Product />
+        <UseCases />
+        <Security />
+        <Pricing />
+        <Faq />
+        <CtaBand />
       </main>
       <Footer />
     </>
   );
 }
 
+/* ------------------------------------------------------------------ */
+
 function TopBar() {
   const stuck = useStuck();
+  const active = useActiveSection(NAV.map(([, href]) => href.slice(1)));
+
   return (
     <header className="topbar" data-stuck={stuck}>
       <div className="wrap topbar-inner">
@@ -42,23 +62,43 @@ function TopBar() {
           <Glyph />
           rollout
         </a>
+
         <nav className="topnav" aria-label="Sections">
-          {NAV.map(([label, href]) => (
-            <a key={href} href={href}>{label}</a>
-          ))}
+          {NAV.map(([label, href]) => {
+            const isActive = active === href.slice(1);
+            return (
+              <a key={href} href={href} data-active={isActive} aria-current={isActive ? "true" : undefined}>
+                {label}
+                {isActive && (
+                  <motion.span
+                    layoutId="nav-underline"
+                    className="nav-underline"
+                    transition={{ type: "spring", stiffness: 400, damping: 34 }}
+                  />
+                )}
+              </a>
+            );
+          })}
         </nav>
+
+        <div className="topcta">
+          <a className="btn btn-ghost" href="#install">Docs</a>
+          <a className="btn btn-primary" href="#pricing">
+            Get started <ArrowRight size={14} aria-hidden />
+          </a>
+        </div>
       </div>
     </header>
   );
 }
 
-/* The hero enters as one sequence rather than five independent fades - the
- * difference between a page that assembles and a page that twitches. */
 function Hero() {
   const reduced = useReducedMotion();
+  const parallax = useHeroParallax();
+
   const seq = {
     hidden: {},
-    show: { transition: { staggerChildren: reduced ? 0 : 0.075, delayChildren: 0.04 } },
+    show: { transition: { staggerChildren: reduced ? 0 : 0.07, delayChildren: 0.04 } },
   };
   const item = reduced
     ? { hidden: {}, show: {} }
@@ -69,31 +109,34 @@ function Hero() {
 
   return (
     <section id="top" className="hero-host flush">
-      <div className="hero-glow" aria-hidden />
+      <motion.div className="hero-glow" style={parallax} aria-hidden />
       <motion.div className="wrap hero" variants={seq} initial="hidden" animate="show">
-        <motion.span className="status" variants={item}>
-          <span className="dot" aria-hidden />
-          Pre-release &middot; not yet published to npm
+        <motion.span className="eyebrow hero-eyebrow" variants={item}>
+          Code migration at organisation scale
         </motion.span>
 
         <motion.h1 variants={item}>
-          Make a breaking change once. Get <em>pull requests</em> open on every repo that needs it.
+          Ship the breaking change. <em>Across every repository.</em> This week.
         </motion.h1>
 
         <motion.p className="hero-sub" variants={item}>
-          You deprecated an internal API. It is called in 400 places across 60 repositories
-          owned by 14 teams. Rollout writes the change once, shows you every diff, and opens
-          the pull requests.
+          Rollout turns an org-wide migration into one transform and a pull request per
+          repository. The deprecation you have been carrying for two years ships on the
+          date you set.
         </motion.p>
 
         <motion.div className="cmds" variants={item}>
-          <CopyCommand command="npx rollout-cli plan" />
-          <a className="ghost" href="#how">
-            See how it works <ArrowRight size={14} aria-hidden />
+          <a className="btn btn-primary btn-lg" href="#pricing">
+            Get started free <ArrowRight size={15} aria-hidden />
           </a>
+          <a className="btn btn-outline btn-lg" href="#contact">Talk to us</a>
         </motion.div>
 
-        <motion.div variants={item}>
+        <motion.p className="hero-fine" variants={item}>
+          Free and open source &middot; your code never leaves your machine &middot; no account required
+        </motion.p>
+
+        <motion.div className="hero-demo" variants={item}>
           <Terminal />
         </motion.div>
       </motion.div>
@@ -101,194 +144,133 @@ function Hero() {
   );
 }
 
-/* The four questions a reader has in the first thirty seconds, answered before
- * they have to scroll for them. */
-function Answers() {
+/* Instead of borrowed customer logos, the honest form of social proof: the
+ * companies that already solved this internally, at great expense. */
+function Credibility() {
   return (
-    <section aria-label="At a glance">
-      <div className="answers">
-        {ANSWERS.map((a, i) => (
-          <Reveal key={a.q} className="answer" delay={i * 0.05}>
-            <span className="q">{a.q}</span>
-            <span className="a">{emphasise(a.a, a.strong)}</span>
-          </Reveal>
-        ))}
+    <section aria-label="Why this category exists" className="credibility">
+      <div className="wrap cred-inner">
+        <p className="cred-lead">
+          Every large engineering organisation eventually builds this tool for itself.
+        </p>
+        <div className="cred-items">
+          <span><strong>Google</strong> built Rosie</span>
+          <span className="sep" aria-hidden />
+          <span><strong>Meta</strong> built fastmod</span>
+          <span className="sep" aria-hidden />
+          <span><strong>Everyone else</strong> writes a shell script nobody trusts</span>
+        </div>
       </div>
     </section>
   );
 }
 
-function emphasise(text: string, strong: string) {
-  const at = text.indexOf(strong);
-  if (at < 0) return text;
+function Why() {
   return (
-    <>
-      {text.slice(0, at)}
-      <strong>{strong}</strong>
-      {text.slice(at + strong.length)}
-    </>
-  );
-}
-
-function Problem() {
-  return (
-    <section id="problem">
+    <section id="why">
       <div className="wrap sec">
-        <Reveal>
-          <span className="eyebrow">The problem</span>
-        </Reveal>
+        <Reveal><span className="eyebrow">Why rollout</span></Reveal>
         <Reveal delay={0.05}>
-          <h2>The change takes ten minutes. Finishing it takes two years.</h2>
+          <h2 className="prose">The change takes ten minutes. Finishing it takes two years.</h2>
         </Reveal>
         <Reveal delay={0.1}>
           <p className="lede prose">
-            Renaming a function in a library you own is trivial. Then you find every place
-            it is called.
+            You deprecate an internal API. Then you find it is called in 400 places across
+            60 repositories owned by 14 teams &mdash; none of whom report to you, and all of
+            whom have something more urgent on the board.
           </p>
         </Reveal>
 
         <Reveal delay={0.15}>
           <div className="figures">
-            {[
-              ["400", "call sites to migrate"],
-              ["60", "repositories they live in"],
-              ["14", "teams who own those repos"],
-            ].map(([n, l]) => (
+            {([
+              [400, "call sites to migrate"],
+              [60, "repositories they live in"],
+              [14, "teams who own those repos"],
+            ] as const).map(([n, l]) => (
               <div className="figure" key={n}>
-                <div className="n">{n}</div>
+                <div className="n"><CountUp to={n} /></div>
                 <div className="l">{l}</div>
               </div>
             ))}
           </div>
         </Reveal>
 
-        <Reveal delay={0.2}>
-          <div className="prose stack">
-            <p className="body">
-              So you do what everyone does: send a deprecation notice, write a migration
-              guide, set a deadline. Then nothing happens &mdash; because the work is not
-              your team&rsquo;s, it is fourteen other teams&rsquo;, and it is never the most
-              important thing on anyone&rsquo;s board. The deadline slips. You keep the old
-              path alive &ldquo;just until Q3.&rdquo;
-            </p>
-            <p className="body">
-              The cost was never the migration. It is that <strong>the old thing never
-              dies</strong>: permanent maintenance, permanent test surface, and a permanent
-              trap for whoever joins next.
-            </p>
-            <p className="body">
-              Google built Rosie for exactly this. Meta built fastmod. They built them
-              because they hit the problem hardest and earliest &mdash; and every company
-              past a few dozen repositories hits it eventually, usually solving it with a
-              half-finished shell script nobody trusts enough to run.
-            </p>
-          </div>
-        </Reveal>
+        <Stagger className="props" step={0.08}>
+          {VALUE_PROPS.map((p) => {
+            const Icon = ICONS[p.icon];
+            return (
+              <motion.div className="prop" key={p.title} variants={staggerItem}>
+                <span className="prop-icon"><Icon size={18} aria-hidden /></span>
+                <h3>{p.title}</h3>
+                <p className="body">{p.body}</p>
+              </motion.div>
+            );
+          })}
+        </Stagger>
       </div>
     </section>
   );
 }
 
-function How() {
+function Product() {
   return (
-    <section id="how">
+    <section id="product">
       <div className="wrap sec">
         <Reveal><span className="eyebrow">How it works</span></Reveal>
         <Reveal delay={0.05}>
-          <h2>One person&rsquo;s ten-minute job, instead of fourteen teams&rsquo; backlog item.</h2>
+          <h2 className="prose">Write the change once. Review every diff. Ship the pull requests.</h2>
         </Reveal>
 
-        <Reveal delay={0.1}>
-          <div className="steps prose">
+        <div className="split">
+          <Stagger className="steps" step={0.09}>
             {STEPS.map((s) => (
-              <div className="step" key={s.n}>
+              <motion.div className="step" key={s.n} variants={staggerItem}>
                 <div className="num">{s.n}</div>
                 <div>
                   <h3>{s.title}</h3>
                   <p className="body">{s.body}</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
-        </Reveal>
+          </Stagger>
+
+          <Reveal delay={0.1}>
+            <ConfigBlock code={CONFIG_SNIPPET} />
+            <p className="small config-note">
+              Transforms run in sequence, so anything keyed off the old name runs before the
+              rename that removes it.
+            </p>
+          </Reveal>
+        </div>
 
         <Reveal delay={0.15}>
-          <ConfigBlock code={CONFIG_SNIPPET} />
-        </Reveal>
-        <Reveal delay={0.2}>
-          <p className="small prose">
-            Transforms run in sequence on each other&rsquo;s output, so anything keyed off
-            the old name must run before the rename that removes it. That is why{" "}
-            <code>editJson</code> comes first here.
-          </p>
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
-function Safety() {
-  return (
-    <section id="safety">
-      <div className="wrap sec">
-        <Reveal><span className="eyebrow">Safety</span></Reveal>
-        <Reveal delay={0.05}>
-          <h2>The failure mode that matters is sixty wrong pull requests.</h2>
-        </Reveal>
-        <Reveal delay={0.1}>
-          <p className="lede prose">
-            Every default is set against that, because a tool you do not trust on sixty
-            repositories is a tool you will run on none.
-          </p>
-        </Reveal>
-        <Reveal delay={0.15}>
-          <dl className="guards prose">
-            {GUARDS.map(([term, detail]) => (
-              <div className="guard" key={term}>
-                <dt>{term}</dt>
-                <dd>{detail}</dd>
-              </div>
-            ))}
-          </dl>
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
-function Helpers() {
-  return (
-    <section id="helpers">
-      <div className="wrap sec">
-        <Reveal><span className="eyebrow">Transforms</span></Reveal>
-        <Reveal delay={0.05}>
-          <h2>The common migrations, without writing a regex against import syntax.</h2>
-        </Reveal>
-        <Reveal delay={0.1}>
-          <p className="lede prose">
-            <code>transform</code> is just{" "}
-            <code>{"({ path, source, repo }) => string | null"}</code>. These exist so the
-            ordinary cases do not need one.
-          </p>
-        </Reveal>
-        <Reveal delay={0.15}>
-          <div className="tablewrap">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">Helper</th>
-                  <th scope="col">What it does</th>
-                </tr>
-              </thead>
-              <tbody>
-                {HELPERS.map(([fn, desc]) => (
-                  <tr key={fn}>
-                    <td className="fn"><code>{fn}</code></td>
-                    <td className="desc">{desc}</td>
+          <div className="capabilities">
+            <div className="cap-head">
+              <h3>Built-in transforms</h3>
+              <p className="small">
+                A transform is just <code>{"(file) => string | null"}</code>, so any parser or
+                AST tool works inside one. These cover the ordinary cases.
+              </p>
+            </div>
+            <div className="tablewrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Helper</th>
+                    <th scope="col">What it does</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <Stagger as="tbody" step={0.035}>
+                  {HELPERS.map(([fn, desc]) => (
+                    <motion.tr key={fn} variants={staggerItem}>
+                      <td className="fn"><code>{fn}</code></td>
+                      <td className="desc">{desc}</td>
+                    </motion.tr>
+                  ))}
+                </Stagger>
+              </table>
+            </div>
           </div>
         </Reveal>
       </div>
@@ -296,51 +278,166 @@ function Helpers() {
   );
 }
 
-function Scope() {
+function UseCases() {
   return (
-    <section id="scope">
+    <section id="use-cases">
       <div className="wrap sec">
-        <Reveal><span className="eyebrow">Scope</span></Reveal>
-        <Reveal delay={0.05}><h2>What it deliberately does not do.</h2></Reveal>
+        <Reveal><span className="eyebrow">Use cases</span></Reveal>
+        <Reveal delay={0.05}>
+          <h2 className="prose">One change, everywhere it needs to go.</h2>
+        </Reveal>
+        <Stagger className="cases" step={0.05}>
+          {USE_CASES.map(([title, body]) => (
+            <motion.div className="case" key={title} variants={staggerItem}>
+              <h3>{title}</h3>
+              <p className="body">{body}</p>
+            </motion.div>
+          ))}
+        </Stagger>
+      </div>
+    </section>
+  );
+}
+
+function Security() {
+  return (
+    <section id="security">
+      <div className="wrap sec">
+        <Reveal><span className="eyebrow">Security</span></Reveal>
+        <Reveal delay={0.05}>
+          <h2 className="prose">
+            A tool you do not trust on sixty repositories is a tool you will run on none.
+          </h2>
+        </Reveal>
         <Reveal delay={0.1}>
-          <ul className="bounds prose">
-            {SCOPE.map((s) => (
-              <li className="bound" key={s}>
-                <span className="mark" aria-hidden>&mdash;</span>
-                <span>{s}</span>
-              </li>
-            ))}
-          </ul>
+          <p className="lede prose">
+            Rollout has no service behind it. There is nothing to send your code to, which
+            removes most of the questions a security review would otherwise ask.
+          </p>
+        </Reveal>
+
+        <Stagger className="trust" step={0.05}>
+          {TRUST.map(([title, body]) => (
+            <motion.div className="trust-item" key={title} variants={staggerItem}>
+              <span className="trust-icon"><Lock size={15} aria-hidden /></span>
+              <div>
+                <h3>{title}</h3>
+                <p className="body">{body}</p>
+              </div>
+            </motion.div>
+          ))}
+        </Stagger>
+
+        <Reveal delay={0.15}>
+          <div className="guards-block">
+            <h3 className="guards-title">
+              <GitPullRequest size={15} aria-hidden /> What the defaults protect you from
+            </h3>
+            <Stagger as="dl" className="guards">
+              {GUARDS.map(([term, detail]) => (
+                <motion.div className="guard" key={term} variants={staggerItem}>
+                  <dt>{term}</dt>
+                  <dd>{detail}</dd>
+                </motion.div>
+              ))}
+            </Stagger>
+          </div>
         </Reveal>
       </div>
     </section>
   );
 }
 
-function Install() {
+function Pricing() {
   return (
-    <section id="install">
+    <section id="pricing">
       <div className="wrap sec">
-        <Reveal><span className="eyebrow">Install</span></Reveal>
-        <Reveal delay={0.05}><h2>Node 20 or newer, git, and the GitHub CLI.</h2></Reveal>
+        <Reveal><span className="eyebrow">Pricing</span></Reveal>
+        <Reveal delay={0.05}><h2 className="prose">The tool is free. Always.</h2></Reveal>
         <Reveal delay={0.1}>
-          <div className="cmds">
+          <p className="lede prose">
+            Paid tiers are for teams who want migrations shared across an organisation and
+            tracked to completion. Nothing in the open-source tier is limited or time-boxed.
+          </p>
+        </Reveal>
+
+        <Stagger className="plans" step={0.07}>
+          {PLANS.map((plan) => (
+            <motion.div
+              className="plan"
+              key={plan.name}
+              data-featured={plan.featured}
+              variants={staggerItem}
+            >
+              {plan.featured && <span className="plan-flag">In development</span>}
+              <h3 className="plan-name">{plan.name}</h3>
+              <div className="plan-price">{plan.price}</div>
+              <div className="plan-note">{plan.note}</div>
+              <ul className="plan-list">
+                {plan.includes.map((f) => (
+                  <li key={f}><Check size={14} aria-hidden /> {f}</li>
+                ))}
+              </ul>
+              <a className={`btn ${plan.featured ? "btn-primary" : "btn-outline"} plan-cta`} href={plan.href}>
+                {plan.cta}
+              </a>
+            </motion.div>
+          ))}
+        </Stagger>
+
+        <Reveal delay={0.15}>
+          <div id="install" className="install-strip">
+            <div>
+              <h3>Start in one command</h3>
+              <p className="small">
+                Node 20 or newer, git, and the GitHub CLI for opening pull requests.
+              </p>
+            </div>
             <CopyCommand command="npm i -g rollout-cli" />
           </div>
         </Reveal>
-        <Reveal delay={0.15}>
-          <p className="body prose">
-            <code>apply</code> needs <a href="https://cli.github.com">gh</a> authenticated to
-            open the pull requests. <code>plan</code> needs neither <code>gh</code> nor any
-            credential beyond read access to clone &mdash; so you can see exactly what a
-            migration would do before granting anything write access.
+      </div>
+    </section>
+  );
+}
+
+function Faq() {
+  return (
+    <section id="faq">
+      <div className="wrap sec">
+        <Reveal><span className="eyebrow">Questions</span></Reveal>
+        <Reveal delay={0.05}><h2 className="prose">Before you run it on sixty repositories.</h2></Reveal>
+        <Stagger className="faq" step={0.05}>
+          {FAQ.map(([q, a]) => (
+            <motion.details className="faq-item" key={q} variants={staggerItem}>
+              <summary>{q}</summary>
+              <p className="body">{a}</p>
+            </motion.details>
+          ))}
+        </Stagger>
+      </div>
+    </section>
+  );
+}
+
+function CtaBand() {
+  return (
+    <section id="contact" className="cta-band">
+      <div className="wrap cta-inner">
+        <Reveal><h2>Stop carrying the deprecation you cannot finish.</h2></Reveal>
+        <Reveal delay={0.06}>
+          <p className="lede">
+            Run <code>plan</code> against your repositories and see the whole migration as a
+            diff. It writes nothing, and needs nothing but read access.
           </p>
         </Reveal>
-        <Reveal delay={0.2}>
-          <p className="small prose">
-            Zero runtime dependencies. Rollout runs inside other people&rsquo;s CI; every
-            dependency it carried would be one they inherited.
-          </p>
+        <Reveal delay={0.12}>
+          <div className="cmds cta-cmds">
+            <a className="btn btn-primary btn-lg" href="#pricing">
+              Get started free <ArrowRight size={15} aria-hidden />
+            </a>
+            <a className="btn btn-outline btn-lg" href="#install">Read the docs</a>
+          </div>
         </Reveal>
       </div>
     </section>
@@ -348,10 +445,38 @@ function Install() {
 }
 
 function Footer() {
+  const columns: [string, [string, string][]][] = [
+    ["Product", [["Why rollout", "#why"], ["How it works", "#product"], ["Use cases", "#use-cases"], ["Pricing", "#pricing"]]],
+    ["Resources", [["Documentation", "#install"], ["Transforms", "#product"], ["FAQ", "#faq"]]],
+    ["Trust", [["Security", "#security"], ["Safety defaults", "#security"], ["Licence: MIT", "#"]]],
+    ["Company", [["Contact", "#contact"], ["GitHub", "#"]]],
+  ];
+
   return (
     <footer>
-      <div className="wrap footer-inner">
-        <span className="mono">rollout</span>
+      <div className="wrap footer-grid">
+        <div className="footer-brand">
+          <a className="wordmark" href="#top"><Glyph /> rollout</a>
+          <p className="small">
+            Make a breaking change once. Get pull requests open on every repository that
+            needs it.
+          </p>
+        </div>
+
+        {columns.map(([heading, links]) => (
+          <nav key={heading} aria-label={heading}>
+            <h4>{heading}</h4>
+            <ul>
+              {links.map(([label, href]) => (
+                <li key={label}><a href={href}>{label}</a></li>
+              ))}
+            </ul>
+          </nav>
+        ))}
+      </div>
+
+      <div className="wrap footer-base">
+        <span>&copy; {new Date().getFullYear()} rollout</span>
         <span>MIT licensed</span>
         <span>Pre-release &mdash; the npm package is not published yet</span>
       </div>

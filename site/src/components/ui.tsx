@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { motion, useReducedMotion, useScroll, useSpring } from "framer-motion";
+import { motion, useInView, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import { Check, Copy } from "lucide-react";
 
 /** A thin progress rule. It is the only chrome that tracks scroll, which is
@@ -121,4 +121,104 @@ export function Glyph({ size = 18 }: { size?: number }) {
       </g>
     </svg>
   );
+}
+
+/* ------------------------------------------------------------------ *
+ * Motion that carries information
+ * ------------------------------------------------------------------ */
+
+/**
+ * Counts a figure up when it arrives. These three numbers are the moment the
+ * reader recognises their own company, so they get a beat of attention -
+ * once, on first sight, never again on re-render.
+ */
+export function CountUp({ to, duration = 1.15 }: { to: number; duration?: number }) {
+  const reduced = useReducedMotion();
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const [n, setN] = useState(reduced ? to : 0);
+
+  useEffect(() => {
+    if (reduced || !inView) return;
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / (duration * 1000));
+      // matches the page's entrance easing, so the number settles like everything else
+      setN(Math.round(to * (1 - Math.pow(1 - t, 4))));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, reduced, to, duration]);
+
+  return <span ref={ref}>{n}</span>;
+}
+
+/** Which section the reader is currently in, for the nav indicator. */
+export function useActiveSection(ids: string[]): string | null {
+  const [active, setActive] = useState<string | null>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) setActive(visible.target.id);
+      },
+      { rootMargin: "-45% 0px -45% 0px", threshold: [0, 0.25, 0.5, 1] },
+    );
+
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    }
+    return () => observer.disconnect();
+  }, [ids.join(",")]);
+
+  return active;
+}
+
+/** Staggers a list of rows in as the group arrives. */
+export function Stagger({
+  children,
+  className,
+  step = 0.045,
+  as = "div",
+}: {
+  children: ReactNode;
+  className?: string;
+  step?: number;
+  as?: "div" | "dl" | "ul" | "tbody";
+}) {
+  const reduced = useReducedMotion();
+  const Comp = as === "dl" ? motion.dl : as === "ul" ? motion.ul : as === "tbody" ? motion.tbody : motion.div;
+
+  return (
+    <Comp
+      className={className}
+      initial={reduced ? undefined : "hidden"}
+      whileInView={reduced ? undefined : "show"}
+      viewport={{ once: true, margin: "-60px" }}
+      variants={{ hidden: {}, show: { transition: { staggerChildren: step } } }}
+    >
+      {children}
+    </Comp>
+  );
+}
+
+export const staggerItem = {
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const } },
+};
+
+/** A slow counter-drift on the hero wash, so the background has depth without
+ *  the page feeling like it is sliding. */
+export function useHeroParallax() {
+  const reduced = useReducedMotion();
+  const { scrollY } = useScroll();
+  const y = useTransform(scrollY, [0, 700], [0, 110]);
+  const opacity = useTransform(scrollY, [0, 560], [1, 0.25]);
+  return reduced ? {} : { y, opacity };
 }
