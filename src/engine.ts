@@ -90,7 +90,7 @@ export function computeChanges(
 
     let after: string | null | undefined;
     try {
-      after = config.transform({ path: rel, source: before, repo });
+      after = config.transform ? config.transform({ path: rel, source: before, repo }) : null;
     } catch (err) {
       throw new Error(`transform threw on ${rel}: ${(err as Error).message}`);
     }
@@ -100,6 +100,89 @@ export function computeChanges(
   }
 
   return { changes, filesScanned };
+}
+
+/** Refuses to touch a tree that already has work in it. */
+async function assertClean(dir: string): Promise<void> {
+  const { stdout } = await sh("git", ["status", "--porcelain"], { cwd: dir });
+  if (stdout.trim()) {
+    throw new Error(
+      "the working tree has uncommitted changes; commands would be run on top of them",
+    );
+  }
+}
+
+/**
+ * Reads back everything git considers changed, so a command's output - a
+ * regenerated lockfile, a formatter's pass, a generated client - lands in the
+ * diff alongside the transform's own edits.
+ */
+async function collectDiff(dir: string): Promise<FileChange[]> {
+  const { stdout } = await sh("git", ["status", "--porcelain", "-uall"], { cwd: dir });
+  const out: FileChange[] = [];
+
+  for (const line of stdout.split("\n")) {
+    if (!line.trim()) continue;
+    const code = line.slice(0, 2);
+    const path = line.slice(3).trim().replace(/^"|"$/g, "");
+    if (code.includes("D")) continue;                 // deletions are not previewed
+
+    const after = readTextFile(join(dir, path));
+    if (after === null) continue;                     // binary or oversized
+
+    let before = "";
+    if (!code.includes("?") && !code.includes("A")) {
+      try {
+        const shown = await sh("git", ["show", `HEAD:${path}`], { cwd: dir });
+        before = shown.stdout;
+      } catch {
+        before = "";
+      }
+    }
+    if (before !== after) out.push({ path, before, after });
+  }
+
+  return out;
+}
+
+/** Puts the tree back exactly as it was found. */
+async function resetTree(dir: string): Promise<void> {
+  await sh("git", ["checkout", "--", "."], { cwd: dir });
+  await sh("git", ["clean", "-fdq"], { cwd: dir });
+}
+
+/**
+ * The full change set: the transform's edits, plus whatever the configured
+ * commands produce on top of them. When commands are configured the work
+ * happens on disk, because that is the only way a command can see it - so in
+ * plan mode the tree is restored afterwards and nothing persists.
+ */
+export async function computeFullChanges(
+  dir: string,
+  repo: string,
+  config: RolloutConfig,
+  mode: "plan" | "apply",
+): Promise<{ changes: FileChange[]; filesScanned: number }> {
+  const { changes, filesScanned } = computeChanges(dir, repo, config);
+
+  if (!config.run?.length) return { changes, filesScanned };
+
+  await assertClean(dir);
+  writeChanges(dir, changes);
+
+  try {
+    for (const cmd of config.run) {
+      if (!cmd.length) continue;
+      await sh(cmd[0], cmd.slice(1), { cwd: dir, timeout: 600_000 });
+    }
+  } catch (err) {
+    await resetTree(dir).catch(() => {});
+    throw err;
+  }
+
+  const full = await collectDiff(dir);
+  if (mode === "plan") await resetTree(dir);
+  return { changes: full, filesScanned };
 }
 
 export function writeChanges(dir: string, changes: FileChange[]): void {
@@ -182,9 +265,12 @@ export async function processRepo(
 
   try {
     const dir = await prepare(target);
-    const { changes, filesScanned } = computeChanges(dir, target.repo, config);
+    const { changes, filesScanned } = await computeFullChanges(dir, target.repo, config, mode);
     base.changes = changes;
     base.filesScanned = filesScanned;
+
+    // when commands ran in apply mode the tree already holds the result
+    const alreadyOnDisk = mode === "apply" && !!config.run?.length;
 
     if (changes.length === 0) {
       base.status = "unchanged";
@@ -192,10 +278,10 @@ export async function processRepo(
       base.status = "changed";
     } else if (isLocal(target.repo)) {
       // a local repository is left for the developer to inspect and commit
-      writeChanges(dir, changes);
+      if (!alreadyOnDisk) writeChanges(dir, changes);
       base.status = "changed";
     } else {
-      writeChanges(dir, changes);
+      if (!alreadyOnDisk) writeChanges(dir, changes);
       base.prUrl = await openPullRequest(dir, target, config);
       base.status = "changed";
     }

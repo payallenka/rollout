@@ -77,12 +77,16 @@ async function loadConfig(path: string): Promise<RolloutConfig> {
     process.exit(2);
   }
 
-  const missing = (["repos", "branch", "title", "transform"] as const).filter((k) => !config[k]);
+  const missing = (["repos", "branch", "title"] as const).filter((k) => !config[k]);
   if (missing.length) {
     console.error(`${path} is missing: ${missing.join(", ")}`);
     process.exit(2);
   }
-  if (typeof config.transform !== "function") {
+  if (!config.transform && !config.run?.length) {
+    console.error(`${path}: needs a transform, a run list, or both - it makes no change otherwise`);
+    process.exit(2);
+  }
+  if (config.transform && typeof config.transform !== "function") {
     console.error(`${path}: transform must be a function`);
     process.exit(2);
   }

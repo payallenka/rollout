@@ -88,6 +88,50 @@ The failure mode that matters is opening sixty wrong pull requests, so:
 - Binary files, anything over 2MB, and `node_modules`, `dist`, `.git`, `vendor`
   and friends are never handed to a transform.
 
+## Beyond source files
+
+Transforms are text-level, so shell scripts, Dockerfiles, CI workflows and config
+files are reachable with an `include` glob like any other file.
+
+Some migrations cannot be done by rewriting text at all. A dependency edit that
+does not regenerate its lockfile produces a pull request that fails CI in every
+repository at once. So commands run inside each repository too, after the
+transform and before the commit, and everything they touch is captured into the
+diff:
+
+```js
+transform: editJson("package.json", (pkg) => {
+  pkg.dependencies["@acme/auth"] = "^4.0.0";
+}),
+run: [["npm", "install", "--package-lock-only"]],
+```
+
+The same mechanism covers `go mod tidy`, a formatter's pass, a generated client,
+or an existing codemod binary you already trust. Arguments are passed as arrays,
+never through a shell. In `plan` mode the working tree is restored afterwards, so
+running commands still writes nothing.
+
+## Is this only for legacy code?
+
+No, and the distinction that matters is fleet size rather than age.
+
+Breaking changes arrive from outside your codebase: a dependency major, a
+disclosed CVE, a cloud SDK version, an expiring API. A six-week-old estate of
+sixty repositories has the same problem as a ten-year-old one. Uniform code
+written to a single standard actually *helps* — the hard part of a codemod is
+variance, so consistency raises the clean-hit rate.
+
+**Why not point a coding agent at each repository?** Because a migration has to be
+identical everywhere and an agent is non-deterministic by design. Sixty agent
+sessions produce sixty different diffs, each reformatting and improving adjacent
+code differently, so every pull request needs real review instead of a glance.
+Rollout applies byte-identical logic everywhere and shows the whole blast radius
+as one diff before writing anything.
+
+The two compose: use an agent to write the transform, which is creative one-time
+work, then use rollout to distribute it deterministically. Where each call site
+needs different judgement, an agent is the right tool and this is not.
+
 ## Transform helpers
 
 `transform` is just a function — `({ path, source, repo }) => string | null` —

@@ -166,6 +166,10 @@ export default {
     renameModule("@acme/auth-legacy", "@acme/auth"),
     renameSymbol("getUserSync", "getUser"),
   ),
+
+  // commands run in each repo after the transform, and their output lands
+  // in the diff too - so the lockfile ships with the change that needs it
+  run: [["npm", "install", "--package-lock-only"]],
 };`;
 
 /* ------------------------------------------------------------------ *
@@ -193,6 +197,15 @@ export const VALUE_PROPS = [
       "across two quarters.",
   },
   {
+    icon: "terminal",
+    title: "Not just source files",
+    body:
+      "Transforms are text-level, so shell scripts, Dockerfiles, CI workflows and config " +
+      "are all in reach. Commands run inside each repository too, so a lockfile, a " +
+      "generated client or a formatter's pass ships in the same pull request as the " +
+      "change that required it.",
+  },
+  {
     icon: "users",
     title: "Teams keep ownership of their code",
     body:
@@ -202,12 +215,12 @@ export const VALUE_PROPS = [
 ] as const;
 
 export const USE_CASES = [
-  ["API deprecation", "Retire an internal package or endpoint and migrate every caller in the same week."],
-  ["Dependency upgrades", "Move an org off a major version, including the config and lockfile changes it needs."],
-  ["Security patches", "Push the same fix into every repository carrying a vulnerable pattern."],
-  ["Config and policy", "Roll a CI workflow, license header, or lint rule out across the estate."],
-  ["Renames at scale", "Rebrand a namespace or module across hundreds of call sites without a merge-conflict week."],
-  ["Compliance sweeps", "Apply a required change everywhere and get an auditable pull request per repository."],
+  ["Dependency majors", "A library you depend on ships a breaking release. Move every repository onto it, lockfiles regenerated, in one pass."],
+  ["CVE response", "A vulnerable pattern is disclosed on a Friday. Push the same fix into every repository carrying it before Monday."],
+  ["API deprecation", "Retire an internal package or endpoint and migrate every caller in the week you announce it."],
+  ["Toolchain and CI", "Roll a workflow, base image, Node version or lint rule across the estate - shell scripts and YAML included."],
+  ["Platform policy", "Apply a required header, config or ownership file everywhere, with an auditable pull request per repository."],
+  ["Namespace moves", "Rename a module or scope across hundreds of call sites without a week of merge conflicts."],
 ] as const;
 
 export const TRUST = [
@@ -286,6 +299,14 @@ export const FAQ = [
   [
     "Does it work with GitHub Enterprise or GitLab?",
     "Pull requests are opened through the GitHub CLI, so GitHub.com and GitHub Enterprise Server both work wherever gh is authenticated. GitLab and Bitbucket are not supported yet.",
+  ],
+  [
+    "Why not just point a coding agent at each repository?",
+    "Because a migration has to be identical everywhere, and an agent is non-deterministic by design. Sixty agent sessions produce sixty different diffs - each interpreting, reformatting and improving adjacent code differently - so every pull request needs a real review rather than a glance. Rollout applies byte-identical logic to every repository and shows the entire blast radius as one diff before it writes anything, so a reviewer approves the transform once instead of auditing sixty variations. It is also seconds rather than sixty long agent runs. The two compose well: use an agent to write the transform, which is genuinely creative one-time work, then use rollout to distribute it deterministically. Where each call site needs different judgement, an agent is the right tool and this is not.",
+  ],
+  [
+    "Our codebase is new and consistent. Is this only for legacy code?",
+    "Breaking changes do not come from your code being old. They come from outside it: a dependency major, a disclosed CVE, a cloud SDK version, an expiring API. A six-week-old estate of sixty repositories has the same problem as a ten-year-old one, because the trigger is fleet size, not age. Consistency actually helps - the hard part of a codemod is variance, so a uniform codebase gives a mechanical transform a higher clean-hit rate.",
   ],
   [
     "How is this different from Nx, Turborepo, or a codemod library?",

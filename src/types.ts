@@ -44,8 +44,22 @@ export interface RolloutConfig {
   /** Globs excluded before the transform runs. Sensible defaults are merged in. */
   exclude?: string[];
 
-  /** The change itself. */
-  transform: Transform;
+  /** The change itself. Optional when `run` alone does the work. */
+  transform?: Transform;
+
+  /**
+   * Commands to run inside each repository after the transform, before the
+   * commit. Every file they touch is captured into the diff.
+   *
+   *   run: [["npm", "install", "--package-lock-only"]]
+   *
+   * This is what makes a migration correct rather than merely plausible: a
+   * dependency edit that does not regenerate its lockfile produces a pull
+   * request that fails CI in every repository at once.
+   *
+   * Arguments are passed as an array and never through a shell.
+   */
+  run?: string[][];
 
   /** Commit message. Defaults to the title. */
   commit?: string;

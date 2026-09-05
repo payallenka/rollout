@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight, CalendarCheck, Check, Clock, GitPullRequest,
-  Lock, Users, type LucideIcon,
+  Lock, Terminal as TerminalIcon, Users, type LucideIcon,
 } from "lucide-react";
 import { Terminal, ConfigBlock } from "./components/Terminal";
 import {
@@ -24,6 +24,7 @@ const NAV = [
 const ICONS: Record<string, LucideIcon> = {
   calendar: CalendarCheck,
   clock: Clock,
+  terminal: TerminalIcon,
   users: Users,
 };
 
@@ -196,7 +197,7 @@ function Why() {
           </div>
         </Reveal>
 
-        <Stagger className="props" step={0.08}>
+        <Stagger className="props props-4" step={0.07}>
           {VALUE_PROPS.map((p) => {
             const Icon = ICONS[p.icon];
             return (
